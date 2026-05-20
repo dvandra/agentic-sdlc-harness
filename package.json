@@ -1,0 +1,22 @@
+{
+  "name": "agentic-sdlc-harness",
+  "version": "1.0.0",
+  "description": "Structured AI-assisted SDLC pipeline using Cursor SDK — based on harness engineering principles",
+  "type": "module",
+  "scripts": {
+    "pipeline": "tsx scripts/orchestrator.ts",
+    "stage": "tsx scripts/run-stage.ts",
+    "impact-map": "tsx scripts/run-stage.ts impact-map",
+    "task-create": "tsx scripts/run-stage.ts task-create",
+    "develop": "tsx scripts/run-stage.ts develop",
+    "test": "tsx scripts/run-stage.ts test",
+    "ci-fix": "tsx scripts/run-stage.ts ci-fix"
+  },
+  "dependencies": {
+    "@cursor/sdk": "latest"
+  },
+  "devDependencies": {
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}

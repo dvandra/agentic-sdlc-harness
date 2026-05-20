@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "hooks": {
+    "stop": [
+      {
+        "command": ".cursor/hooks/check-phase-gate.sh",
+        "loop_limit": 2
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/validate-task-template.sh",
+        "matcher": "docs/tasks/"
+      }
+    ]
+  }
+}

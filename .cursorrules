@@ -1,0 +1,31 @@
+## Agentic SDLC Harness Rules
+
+You are operating within a structured AI development workflow. Follow these rules strictly.
+
+### Phase Discipline
+- NEVER skip phases. Always: Impact Map → Task Creation → Development → Testing → CI Fix.
+- NEVER start coding without an approved impact map.
+- NEVER make architectural decisions during implementation — those belong in the impact map.
+- ALWAYS pause for human review after producing an impact map or design doc.
+
+### Grounding in Real Code
+- ALWAYS scan the actual codebase before planning. Use file search, symbol search, and grep.
+- NEVER invent file paths — verify they exist.
+- NEVER invent API endpoints or function signatures — find the real ones.
+- ALWAYS reference existing patterns when proposing new code.
+
+### Structured Output
+- Impact maps follow `templates/impact-map-template.md`
+- Tasks follow `templates/task-template.md`
+- Design docs follow `templates/design-doc-template.md`
+
+### Implementation Constraints
+- One repository per task. No cross-repo changes in a single task.
+- Each PR addresses exactly one task.
+- Self-review your code against acceptance criteria before marking complete.
+- Write tests alongside implementation, not after.
+
+### Communication
+- When blocked, say what's missing and what you need.
+- When uncertain about architecture, produce options and ask — don't guess.
+- When a plan changes, update the impact map first.

@@ -1,0 +1,115 @@
+name: Agentic SDLC Pipeline
+
+on:
+  # Trigger full pipeline when an issue is labeled
+  issues:
+    types: [labeled]
+
+  # Trigger CI fix when checks fail on a PR
+  check_suite:
+    types: [completed]
+
+  # Manual trigger for any stage
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Pipeline stage to run"
+        required: true
+        type: choice
+        options:
+          - impact-map
+          - task-create
+          - develop
+          - test
+          - ci-fix
+          - full-pipeline
+      feature:
+        description: "Feature description"
+        required: true
+      repo:
+        description: "Target repository (leave empty for current)"
+        required: false
+      agent_id:
+        description: "Agent ID to resume (for test/ci-fix stages)"
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+  checks: read
+
+jobs:
+  # ── Full Pipeline (triggered by issue label) ─────────────────────
+  full-pipeline:
+    if: >
+      github.event_name == 'issues' && github.event.label.name == 'agent-develop'
+      || (github.event_name == 'workflow_dispatch' && github.event.inputs.stage == 'full-pipeline')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install @cursor/sdk tsx
+      - name: Run full pipeline
+        run: |
+          npx tsx scripts/orchestrator.ts \
+            --feature "${{ github.event.issue.title || github.event.inputs.feature }}" \
+            --repo "${{ github.server_url }}/${{ github.repository }}" \
+            --jira "${{ github.event.issue.title }}"
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+
+  # ── Single Stage (manual dispatch) ───────────────────────────────
+  single-stage:
+    if: >
+      github.event_name == 'workflow_dispatch'
+      && github.event.inputs.stage != 'full-pipeline'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install @cursor/sdk tsx
+      - name: Run stage
+        run: |
+          ARGS="--feature \"${{ github.event.inputs.feature }}\""
+          REPO="${{ github.event.inputs.repo }}"
+          if [ -z "$REPO" ]; then
+            ARGS="$ARGS --repo ${{ github.server_url }}/${{ github.repository }}"
+          else
+            ARGS="$ARGS --repo $REPO"
+          fi
+          RESUME="${{ github.event.inputs.agent_id }}"
+          if [ -n "$RESUME" ]; then
+            ARGS="$ARGS --resume $RESUME"
+          fi
+          npx tsx scripts/run-stage.ts ${{ github.event.inputs.stage }} $ARGS
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+
+  # ── Auto-fix CI failures ─────────────────────────────────────────
+  auto-fix-ci:
+    if: >
+      github.event_name == 'check_suite'
+      && github.event.check_suite.conclusion == 'failure'
+      && github.event.check_suite.pull_requests[0]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.check_suite.head_branch }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install @cursor/sdk tsx
+      - name: Auto-fix CI
+        run: |
+          npx tsx scripts/run-stage.ts ci-fix \
+            --feature "Fix CI on PR #${{ github.event.check_suite.pull_requests[0].number }}" \
+            --repo "${{ github.server_url }}/${{ github.repository }}"
+        env:
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
